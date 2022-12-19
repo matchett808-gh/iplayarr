@@ -26,8 +26,8 @@
       <torznab:attr name="imdbid" value="<<imdbid>>" />
       <torznab:attr name="seeders" value="9999" />
       <torznab:attr name="peers" value="1" />      
-      <torznab:attr name="infohash" value="8ad8dc1fff135d32bebe54e284ee51a2bb3a9091" />
-      <torznab:attr name="magneturl" value="magnet:?xt=urn:btih:8ad8dc1fff135d32bebe54e284ee51a2bb3a9091&amp;dn=<<dn>>&amp;tr=<<dllink>>" />
+      <torznab:attr name="infohash" value="<<infohash>>" />
+      <torznab:attr name="magneturl" value="magnet:?xt=urn:btih:<<infohash>>&amp;dn=<<dn>>&amp;tr=<<dllink>>" />
       <torznab:attr name="downloadvolumefactor" value="0" />
       <torznab:attr name="uploadvolumefactor" value="1" />
     </item>
