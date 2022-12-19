@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <atom:link href="/" rel="self" type="application/rss+xml" />
+    <title>AggregateSearch</title>
+    <description>This feed includes all configured trackers</description>
+    <link>http://127.0.0.1/</link>
+    <language>en-US</language>
+    <category>search</category>
+
+    <item>
+      <title>SOMETHINGYOURENOTDOWNLOADING</title>
+      <!-- <guid>https://rarbg.to/infohash/8ad8dc1fff135d32bebe54e284ee51a2bb3a9091</guid> -->
+      <!-- <jackettindexer id="rarbg">RARBG</jackettindexer> -->
+      <!-- <type>public</type> -->
+      <!-- <comments>https://torrentapi.org/redirect_to_info.php?token=3khnbsyau2&amp;p=2_9_4_6_9_4_7__8ad8dc1fff&amp;app_id=ttekcaJ_v0.20.2400</comments> -->
+      <pubDate>Sun, 18 Dec 2022 21:18:54 +0000</pubDate>
+      <size>7966812016796681201679668120167966812016</size>
+      <description />
+      <link>HTTP://127.0.0.1</link>
+      <category>5045</category>
+      <category>100049</category>
+      <enclosure url="" length="7966812016796681201679668120167966812016" type="application/x-bittorrent" />
+      <torznab:attr name="category" value="5045" />
+      <torznab:attr name="category" value="100049" />
+      <torznab:attr name="tvdbid" value="360295" />
+      <torznab:attr name="imdb" value="5607976" />
+      <torznab:attr name="imdbid" value="tt5607976" />
+      <torznab:attr name="tmdbid" value="68507" />
+      <torznab:attr name="genre" value="" />
+      <torznab:attr name="seeders" value="492" />
+      <torznab:attr name="peers" value="1067" />
+      <torznab:attr name="infohash" value="8ad8dc1fff135d32bebe54e284ee51a2bb3a9091" />
+      <torznab:attr name="magneturl" value="magnet:?xt=urn:btih:8ad8dc1fff135d32bebe54e284ee51a2bb3a9091&amp;dn=His.Dark.Materials.S03E05.HLG.2160p.WEB.H265-GGEZ%5Brartv%5D&amp;tr=http%3A%2F%2Ftracker.trackerfix.com%3A80%2Fannounce&amp;tr=udp%3A%2F%2F9.rarbg.me%3A2740&amp;tr=udp%3A%2F%2F9.rarbg.to%3A2840&amp;tr=udp%3A%2F%2Ftracker.thinelephant.org%3A12770&amp;tr=udp%3A%2F%2Ftracker.slowcheetah.org%3A14770" />
+      <torznab:attr name="downloadvolumefactor" value="0" />
+      <torznab:attr name="uploadvolumefactor" value="1" />
+    </item>
+  </channel>
+</rss>

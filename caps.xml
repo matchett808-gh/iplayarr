@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<caps>
+  <server title="Jackett" />
+  <limits max="1000" default="1000" />
+  <searching>
+    <search available="yes" supportedParams="q" searchEngine="raw" />
+    <tv-search available="yes" supportedParams="q,season,ep,tvmazeid,tvdbid" searchEngine="raw" />
+    <movie-search available="yes" supportedParams="q,imdbid,tmdbid" searchEngine="raw" />
+    <music-search available="yes" supportedParams="q,album,artist" searchEngine="raw" />
+    <audio-search available="yes" supportedParams="q,album,artist" searchEngine="raw" />
+    <book-search available="yes" supportedParams="q" searchEngine="raw" />
+  </searching>
+  <categories>
+    <category id="2000" name="Movies">
+      <subcat id="2010" name="Movies/Foreign" />
+      <subcat id="2020" name="Movies/Other" />
+      <subcat id="2030" name="Movies/SD" />
+      <subcat id="2040" name="Movies/HD" />
+      <subcat id="2045" name="Movies/UHD" />
+      <subcat id="2050" name="Movies/BluRay" />
+      <subcat id="2060" name="Movies/3D" />
+      <subcat id="2070" name="Movies/DVD" />
+    </category>
+    <category id="5000" name="TV">
+      <subcat id="5030" name="TV/SD" />
+      <subcat id="5040" name="TV/HD" />
+      <subcat id="5045" name="TV/UHD" />
+      <subcat id="5050" name="TV/Other" />
+      <subcat id="5060" name="TV/Sport" />
+      <subcat id="5070" name="TV/Anime" />
+      <subcat id="5080" name="TV/Documentary" />
+    </category>
+  </categories>
+</caps>
