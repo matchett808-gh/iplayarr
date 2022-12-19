@@ -10,10 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.2.1",
-    "base32-encode": "^2.0.0",
     "express": "^4.18.2",
     "hi-base32": "^0.5.1",
-    "node-bbsub": "^0.0.3",
     "simple-json-db": "^2.0.0"
   }
 }

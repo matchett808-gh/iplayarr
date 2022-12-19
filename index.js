@@ -9,7 +9,6 @@ const JSONdb = require('simple-json-db');
 const db = new JSONdb('data.json');
 var crypto = require("crypto");
 
-
 if(!db.has('config')){
     db.set('config', {
         "slotnum": 1,
@@ -18,9 +17,42 @@ if(!db.has('config')){
         "completedDir": '/mnt/tmission/complete'
     });
 }
-
+const states = [
+    'Paused',
+    'Downloading',
+    'Moving', 
+]
 
 app.use(express.json());
+
+function episodeTitleMatcher(match, epname) {
+    const process = function(s) {
+        return s.replace('&', 'and')
+                .replace(/ /gm,'')
+                .toLowerCase()
+    }
+    return process(match) == process(epname)
+}
+
+function changeQueueItemState(itemId, newState){
+    config = db.get('config')
+    for(const torrent in config.queue) {
+        if(config.queue[torrent].id == itemId) {
+            config.queue[torrent].state = newState
+        } 
+    }
+    db.set('config', config);
+}
+
+function releaseSlotById(id){
+    var config = db.get('config')
+    var index = config.slots.indexOf(id);
+    if (index !== -1) {
+        config.slots.splice(index, 1);
+    }
+    db.set('config', config);
+}
+
 
 async function assignSlot() {
     const config = db.get('config');
@@ -30,16 +62,16 @@ async function assignSlot() {
             for(const torrent in config.queue) {
                 if(config.queue[torrent].state == "Paused"){
                     active = config.queue[torrent]
-                    config.queue[torrent].state = 'Downloading';
                     config.slots.push(config.queue[torrent].id);
+                    db.set('config', config);
                     break;
                 }
             }   
         }
-        db.set('config', config);
         worker(active, config.completedDir)
     }
 }
+
 function get_system_info() {
     assignSlot()
     const config = db.get('config');
@@ -47,17 +79,19 @@ function get_system_info() {
     const countAll = config.slots.length + config.queue.length;
     const countActive = config.slots.length; 
     for(const torrent of config.queue) {
+        let status = torrent.state != 'Complete' ? torrent.state : 'Complete'
+        status = status == 'Downloading' ? 'Active' : status
         const template =  {
             'hash': torrent.id,         
             'name': torrent.dn,
-            'state': torrent.status,         
-            'progress': 0.1,
-            'eta': 9999999,
-            'message': 'queued',
-            'is_finished': false,
-            'save_path':'',
-            'total_size':0,    
-            'total_done':0,
+            'state': status,         
+            'progress': torrent.state != 'Complete' ? 0.1 : 100,
+            'eta': torrent.state != 'Complete' ? 99999 : 0,
+            // 'message': 'queued',
+            'is_finished': torrent.state != 'Complete' ? false : true,
+            'save_path':  torrent.state == 'Complete' ?'/downloads/complete/' + '/' : '',
+            'total_size': torrent.state != 'Complete' ? 0 : 10000,    
+            'total_done': torrent.state != 'Complete' ? 0 : 10000,    
             'time_added':0,
             'active_time':0,
             'ratio':0,         
@@ -68,7 +102,6 @@ function get_system_info() {
         }
         torrents[torrent.id] = template
   
-
     }
     const sysinfo = {
         connected: true,
@@ -136,50 +169,46 @@ function get_system_info() {
     return sysinfo
 }
 
-function worker(active, completedDir) {
+function get_iplayer_command(pid, safedn, dir) {
+    return `get-iplayer --subs-embed --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`
+}
+
+async function worker(active, completedDir) {
     if(active == undefined || completedDir == undefined) {
         console.log('no record')
         return
     }
+    changeQueueItemState(active.id, 'Downloading')
     const dir = './tmp/' + active.pid + '/'
     if (!fs.existsSync(dir, 777)){
         fs.mkdirSync(dir);
     }
-    exec(`get-iplayer --force --pid=${active.pid} --output="${dir}"`, (error, stdout, stderr) => {
+    const safedn = active.dn.replace(/ /g, '.')
+    exec(get_iplayer_command(active.pid, safedn, dir), (error, stdout, stderr) => {
         if(error || stderr) {
             console.log(error)
             console.log(stderr)
             return
         }
         if(stdout) {
-            var config = db.get('config')
-            var index = config.slots.indexOf(active.id);
-            if (index !== -1) {
-                config.slots.splice(index, 1);
-            }
-            db.set('config', config);
-            config = db.get('config')
-            for(const torrent in config.queue) {
-                if(config.queue[torrent].id == active.id) {
-                    config.queue[torrent].state = 'Complete'
-                } 
-            }
-            db.set('config', config);
-
-            fs.copySync(dir, completedDir + '/' + active.pid + '/', function (err) {
+            releaseSlotById(active.id)
+            changeQueueItemState(active.id, 'Moving')
+            fs.cp(dir, completedDir + '/' + active.dn + '/', {recursive: true}, function (err) {
                 if (err) throw err
-                console.log('Successfully renamed - AKA moved!')
-                fs.unlink(dir)
+                console.log('Successfully moved!')
+                changeQueueItemState(active.id, 'Complete')
+                fs.rmdir(dir, {force: true, recursive: true}, (err)=>{
+                    console.log(err)
+                });
             })
-
         }
     });
-
 }
 
 function createFakeMagnetLinkHash(dn, pid) {
     return crypto.createHash('sha1').update(dn+pid).digest('hex');
 }
+
 function queueJob(jobHash, dn, pid) {
     const id = jobHash
     const config = db.get('config');
@@ -204,63 +233,101 @@ function zeroPad(num, places) {
 }
 
 app.get('/api', function (req, res) {
+    let additionalLines = []
+    let matches = []
+    console.log(req.query)
     if(req.query['t'] == 'caps') {
         res.sendFile(__dirname + "/" + "caps.xml")
     } else if(req.query['t'] == 'tvsearch' && req.query['tvmazeid']) {
         const url = 'https://api.tvmaze.com/shows/' + req.query['tvmazeid'];
-
         axios.get(url).then(showres => {
-            axios.get(url+ '/episodes').then(episoderes => {
-            const episodes = episoderes.data;
-            for(const episode of episodes) {
-                if(episode['number'] == req.query['ep'] && episode['season'] == req.query['season']) {
-                    const sonarrNaming = `S${zeroPad(episode['season'], 2)}E${zeroPad(episode['number'], 2)}`
-                    // found the one we are looking for
-                    exec("get-iplayer --exclude-channel=CBBC --nocopyright --fields=name '" + showres.data['name'] +"'", (error, stdout, stderr) => {
-                        if (error) {
-                            res.sendFile(__dirname + "/" + "blanktvsearch.xml")
-                        }
-                        if (stderr) {
-                            console.log(`stderr: ${stderr}`);
-                            res.sendFile(__dirname + "/" + "blanktvsearch.xml")
-                        }
-                        if(stdout){
-                            const resultregex = new RegExp(/^(\d*):\t(.*)\ \-\ (.*)\,\ (.*),\ (.*)/gm);
-                            const matches = [...stdout.matchAll(resultregex)]
-                            if(matches.length == 0) {
-                                res.sendFile(__dirname + "/" + "blanktvsearch.xml")
-                            } else {
-                                for(const match of matches) {
-                                    if(match[3] == episode.name) // matchgroup 3 is the episode title
-                                    {
-                                        // now return this to sonarr
-                                        const dllink = 'https://www.bbc.co.uk/iplayer/episode/' + match[5];
-                                        const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`
+            let seriesPid = null;
 
-                                        const iplayer_moniker = `${showres.data['name']} - ${sonarrNaming} - 1080p - ${episode.name}: ${match[5]}`
-                                        const dn = encodeURIComponent(iplayer_moniker)
-                                        const content = fs.readFileSync(__dirname + "/" + "tvsearchtemplate.xml").toString();
-                                        const result = content.replace(/<<imdbid>>/g, showres.data['externals']['imdb'])
-                                                              .replace(/<<tvdbid>>/g, req.query['tvdbid'])
-                                                              .replace(/<<content>>/g, enclosure)
-                                                              .replace(/<<pid>>/g, match[5])
-                                                              .replace(/<<title>>/g, iplayer_moniker)
-                                                              .replace(/<<infohash>>/g, createFakeMagnetLinkHash(dn, match[5]))
-                                                              .replace(/<<dllink>>/g, dllink)
-                                                              .replace(/<<dn>>/g, dn);
-                                        console.log(result)
-                                        res.end(result)
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    break;
-
+            const config = db.get('config');
+            seriesPid = config.manualPIDMap[showres.data['name']];
+            
+            if(showres.data['officialSite']) {
+                 if(showres.data['officialSite'].startsWith('https://www.bbc.co.uk/programmes/')){
+                seriesPid = showres.data['officialSite'].replace('https://www.bbc.co.uk/programmes/', '');
                 }
             }
 
+            if(seriesPid == null) {
+                res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                return 
+            }                
+
+
+            exec(`get-iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
+                if (error) {
+                    res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                }
+                if (stderr) {
+                    console.log(`stderr: ${stderr}`);
+                    res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                }
+                const resultregex = new RegExp(/^(.*)(\ \-\ )(.*)(\,\ .*,\ )(.*)/gm);
+                additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
+                exec("get-iplayer --exclude-channel=CBBC --nocopyright --fields=name '" + showres.data['name'] +"'", (error, stdout, stderr) => {
+                    if (error) {
+                        res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                    }
+                    if (stderr) {
+                        console.log(`stderr: ${stderr}`);
+                        res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                    }
+                    if(stdout){
+                        const resultregex = new RegExp(/^(\d*):\t(.*)\ \-\ (.*)\,\ (.*),\ (.*)/gm);
+                        const partMatches = [...stdout.matchAll(resultregex)]
+                        matches = partMatches.concat(additionalLines)
+                        axios.get(url+ '/episodes').then(episoderes => {
+                        const episodes = episoderes.data;
+                        for(const episode of episodes) {
+                            if(episode['number'] == req.query['ep'] && episode['season'] == req.query['season']) {
+                                const sonarrNaming = `S${zeroPad(episode['season'], 2)}E${zeroPad(episode['number'], 2)}`
+                                console.log(matches)
+                                // found the one we are looking for
+                                if(matches.length == 0) {
+                                    res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                                } else {
+                                    for(const match of matches) {
+                                        if(episodeTitleMatcher(match[3], episode.name)) // matchgroup 3 is the episode title
+                                        {
+                                            // now return this to sonarr
+                                            const dllink = 'https://www.bbc.co.uk/iplayer/episode/' + match[5];
+                                            const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`
+            
+                                            const iplayer_moniker = `${showres.data['name']}.${sonarrNaming}.1080p`
+                                            const dn = encodeURIComponent(iplayer_moniker)
+                                            const content = fs.readFileSync(__dirname + "/" + "tvsearchtemplate.xml").toString();
+                                            const result = content.replace(/<<imdbid>>/g, showres.data['externals']['imdb'])
+                                                                  .replace(/<<tvdbid>>/g, req.query['tvdbid'])
+                                                                  .replace(/<<content>>/g, enclosure)
+                                                                  .replace(/<<pid>>/g, match[5])
+                                                                  .replace(/<<title>>/g, iplayer_moniker)
+                                                                  .replace(/<<infohash>>/g, createFakeMagnetLinkHash(dn, match[5]))
+                                                                  .replace(/<<dllink>>/g, dllink)
+                                                                  .replace(/<<dn>>/g, dn);
+                                            console.log(result)
+                                            res.end(result)
+                                            return
+                                        }
+                                    }
+                                    res.sendFile(__dirname + "/" + "blanktvsearch.xml")
+                                }
+                                break;
+            
+                            }
+                        }
+            
+                        });
+                       
+                    }
+                });
+            
             });
+
+
         });
     } else {
         res.sendFile(__dirname + "/" + "blanktvsearch.xml")
@@ -304,13 +371,16 @@ app.post('/json', function(req, res) {
             response['result'] = jobId;
             res.status(200);
             response['error'] = null;
-            console.log(response)
             res.end(JSON.stringify(response))
             break;
         case 'core.set_torrent_options':
             res.status(200);
             response['error'] = null;
-            console.log(response)
+            res.end(JSON.stringify(response))
+            break;
+        case 'core.remove_torrent':
+            res.status(200);
+            response['error'] = null;
             res.end(JSON.stringify(response))
             break;
 
@@ -330,17 +400,3 @@ var server = app.listen(8081, function () {
    var port = server.address().port
    console.log("Example app listening at http://%s:%s", host, port)
 })
-
-/*
-web.updateui
-{"result": 
-{"connected": true, 
-"torrents": {}, "filters": {"state": [["All", 0], ["Active", 0], ["Allocating", 0], ["Checking", 0], ["Downloading", 0], ["Seeding", 0], ["Paused", 0], ["Error", 0], ["Queued", 0], ["Moving", 0]], "tracker_host": [["All", 0], ["Error", 0]], "owner": [["", 0]]}, "stats": {"max_download": -1.0, "max_upload": -1.0, "max_num_connections": 200, "num_connections": 0, "upload_rate": 0.0, "download_rate": 0.0, "download_protocol_rate": 0.0, "upload_protocol_rate": 0.0, "dht_nodes": 107, "has_incoming_connections": 0, "free_space": -1, "external_ip": "77.100.94.58"}}, "error": null, "id": 199}
-
-core.add_torrent_magnet - response is from web.add_torrents - thats an id of some sort
-{"result": [[true, "26d8ff278111764607f5f84097e6a94522196302"]], "error": null, "id": 364}
-
-
-core.get_config_values
-{"result": {"add_paused": false, "pre_allocate_storage": false, "download_location": "/downloads", "max_connections_per_torrent": -1, "max_download_speed_per_torrent": -1, "move_completed": false, "move_completed_path": "/downloads", "max_upload_slots_per_torrent": -1, "max_upload_speed_per_torrent": -1, "prioritize_first_last_pieces": false, "sequential_download": false}, "error": null, "id": 310}
-*/
