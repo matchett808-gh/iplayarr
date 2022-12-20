@@ -4,11 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+
+    "lint": "node node_modules/eslint/bin/eslint.js -c ./.eslintrc.js ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+
+    "eslint": "^8.5.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.3",
     "axios": "^1.2.1",
     "express": "^4.18.2",
     "hi-base32": "^0.5.1",

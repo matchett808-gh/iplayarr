@@ -1,0 +1,9 @@
+FROM node:19.3-alpine
+WORKDIR /usr/src/app
+COPY package.json ./
+RUN apk --no-cache add git
+RUN apk --no-cache add curl
+RUN npm install
+COPY . .
+HEALTHCHECK --interval=1m --start-period=3s CMD curl  --fail http://localhost:1800/ || exit 1
+CMD ["node", "index.js"]
