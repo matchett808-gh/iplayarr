@@ -93,6 +93,11 @@ function releaseSlotById(id) {
   }
   db.set('config', config);
 }
+function queueRemoveById(id) {
+  const config = db.get('config');
+  config.queue = config.queue.filter((x) => x.id !== id);
+  db.set('config', config);
+}
 
 function getIplayerCommand(pid, safedn, dir) {
   return `/app/get_iplayer --subs-embed --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`;
@@ -122,15 +127,6 @@ async function worker(active, completedDir) {
         console.log('Successfully moved!');
         changeQueueItemState(active.id, 'Complete');
       });
-
-      // fs.cp(dir, `${completedDir}/${active.dn}/`, { recursive: true }, (err) => {
-      //   if (err) throw err;
-      //   console.log('Successfully moved!');
-      //   changeQueueItemState(active.id, 'Complete');
-      //   fs.rmdir(dir, { force: true, recursive: true }, (rmerr) => {
-      //     console.log(rmerr);
-      //   });
-      // });
     }
   });
 }
@@ -419,9 +415,16 @@ app.post('/json', (req, res) => {
         break;
       case 'core.remove_torrent':
         // @TODO: implement removing a torrent from the queue
+        const config = db.get('config');
+        const targetDirectory = `${config.completedDir}/${active.dn}/`;
+        queueRemoveById(req.body.params[0])
+        if(fs.lstatSync(targetDirectory).isDirectory()) {
+          fs.rm(targetDirectory, {force: true, recursive: true},()=>{})
+        }
         res.status(200);
         response.error = null;
         res.end(JSON.stringify(response));
+
         break;
       default:
         // @TODO: maybe logging?
