@@ -19,7 +19,7 @@ RUN wget -qO- https://github.com/get-iplayer/get_iplayer/archive/v${GET_IPLAYER_
     mv /tmp/get_iplayer-${GET_IPLAYER_VERSION}/get_iplayer . && \
     rm -rf /tmp/* && \
     chmod +x ./get_iplayer
-
+RUN /app/get_iplayer --refresh
 WORKDIR /usr/src/app
 COPY package.json ./
 RUN mkdir tmp

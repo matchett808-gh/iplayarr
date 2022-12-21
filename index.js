@@ -65,7 +65,7 @@ function episodeTitleMatcher(match, epname, s) {
     if(matches.length === 0) {
        return false
     }
-
+    return true
   }
   const process = function (s) {
     return s.replace('&', 'and')
@@ -341,7 +341,7 @@ app.get('/sonarr', (req, res) => {
                         const dllink = `https://www.bbc.co.uk/iplayer/episode/${match[5]}`;
                         const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`;
 
-                        const iplayerMoniker = `${showres.data.name}.${sonarrNaming}.1080p`;
+                        const iplayerMoniker = `${showres.data.name}.${sonarrNaming} [iplayer].1080p`;
                         const dn = encodeURIComponent(iplayerMoniker);
                         const content = fs.readFileSync(`${__dirname}/tvsearchtemplate.xml`).toString();
                         const result = content.replace(/<<imdbid>>/g, showres.data.externals.imdb)
