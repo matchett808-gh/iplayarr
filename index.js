@@ -87,7 +87,7 @@ function releaseSlotById(id) {
 }
 
 function getIplayerCommand(pid, safedn, dir) {
-  return `get-iplayer --subs-embed --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`;
+  return `/app/get-iplayer --subs-embed --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`;
 }
 
 async function worker(active, completedDir) {
@@ -292,7 +292,7 @@ app.get('/api', (req, res) => {
         return;
       }
 
-      exec(`get-iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
+      exec(`/app/get-iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
         if (error) {
           console.log('iplayer error')
           res.sendFile(`${__dirname}/blanktvsearch.xml`);
@@ -428,8 +428,8 @@ app.post('/json', (req, res) => {
 
 const server = app.listen(8081, () => {
   const listeningHost = server.address().address;
-  const { listeningPort } = server.address();
-  console.log('Example app listening at http://%s:%s', listeningHost, listeningPort);
+  const listeningPort = server.address().port;
+  console.log('Iplayarr listening at http://%s:%s', listeningHost, listeningPort);
 });
 
 const requestListener = function (req, res) {
