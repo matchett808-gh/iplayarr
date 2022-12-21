@@ -160,7 +160,7 @@ function getSystemInfo() {
   const config = db.get('config');
   const torrents = {};
   for (const torrent of config.queue) {
-    let status = torrent.state !== 'Complete' ? torrent.state : 'Seeding';
+    let status = torrent.state !== 'Complete' ? torrent.state : 'Paused';
     status = status === 'Downloading' ? 'Active' : status;
     const template = {
       hash: torrent.id,
@@ -176,9 +176,9 @@ function getSystemInfo() {
       active_time: 1000,
       ratio: 1,
       is_auto_managed: true,
-      stop_at_ratio: 0,
-      remove_at_ratio: 1,
-      stop_ratio: 0,
+      stop_at_ratio: 0.1,
+      remove_at_ratio: 0.1,
+      stop_ratio: 0.1,
     };
     torrents[torrent.id] = template;
   }
@@ -299,6 +299,7 @@ app.get('/sonarr', (req, res) => {
         }
       }
       if (seriesPid == null) {
+        console.log('no seriesPID')
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
       }
