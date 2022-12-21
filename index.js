@@ -31,6 +31,33 @@ if (!db.has('config')) {
 
 app.use(express.json());
 
+const copy = function(src, dest, after = function(){}) {    
+  console.log('copying '+src+' to '+dest)
+
+  if(fs.lstatSync(src).isDirectory()) {
+      if ( !fs.existsSync( dest ) ) {
+          fs.mkdirSync( dest );
+      files = fs.readdirSync(src);
+      for(const file of files) {
+          copy(src +file, dest+file)
+      }
+  }
+  } else {
+    const readStream = fs.createReadStream(src);
+    const writeStream = fs.createWriteStream(dest);
+    readStream.pipe(writeStream)
+  }
+  after();
+}
+
+const move = function(src, dest, after = function(){}) {
+  copy(src,dest, function(){
+      console.log('deleting')
+      fs.rm(src, {force: true, recursive: true},()=>{})
+  })
+  after();
+}
+
 function episodeTitleMatcher(match, epname) {
   const process = function (s) {
     return s.replace('&', 'and')
@@ -64,7 +91,7 @@ function getIplayerCommand(pid, safedn, dir) {
 }
 
 async function worker(active, completedDir) {
-  if (active === undefined || completedDir === undefined) {
+  if (active === undefined || active == null || completedDir === undefined) {
     console.log('no record');
     return;
   }
@@ -83,14 +110,19 @@ async function worker(active, completedDir) {
     if (stdout) {
       releaseSlotById(active.id);
       changeQueueItemState(active.id, 'Moving');
-      fs.cp(dir, `${completedDir}/${active.dn}/`, { recursive: true }, (err) => {
-        if (err) throw err;
+      move(dir, `${completedDir}/${active.dn}/`, function(){
         console.log('Successfully moved!');
         changeQueueItemState(active.id, 'Complete');
-        fs.rmdir(dir, { force: true, recursive: true }, (rmerr) => {
-          console.log(rmerr);
-        });
       });
+
+      // fs.cp(dir, `${completedDir}/${active.dn}/`, { recursive: true }, (err) => {
+      //   if (err) throw err;
+      //   console.log('Successfully moved!');
+      //   changeQueueItemState(active.id, 'Complete');
+      //   fs.rmdir(dir, { force: true, recursive: true }, (rmerr) => {
+      //     console.log(rmerr);
+      //   });
+      // });
     }
   });
 }
@@ -255,7 +287,6 @@ app.get('/api', (req, res) => {
           seriesPid = showres.data.officialSite.replace('https://www.bbc.co.uk/programmes/', '');
         }
       }
-
       if (seriesPid == null) {
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
@@ -263,6 +294,7 @@ app.get('/api', (req, res) => {
 
       exec(`get-iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
         if (error) {
+          console.log('iplayer error')
           res.sendFile(`${__dirname}/blanktvsearch.xml`);
         }
         if (stderr) {
@@ -273,6 +305,7 @@ app.get('/api', (req, res) => {
         additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
         exec(`get-iplayer --exclude-channel=CBBC --nocopyright --fields=name '${showres.data.name}'`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
           if (currentSearchError) {
+            console.log('iplayer error 2')
             res.sendFile(`${__dirname}/blanktvsearch.xml`);
           }
           if (currentSearchStderr) {
@@ -286,11 +319,12 @@ app.get('/api', (req, res) => {
             axios.get(`${url}/episodes`).then((episoderes) => {
               const episodes = episoderes.data;
               for (const episode of episodes) {
-                if (episode.number === req.query.ep && episode.season === req.query.season) {
+                if (episode.number == req.query.ep && episode.season == req.query.season) {
                   const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
                   console.log(matches);
                   // found the one we are looking for
                   if (matches.length === 0) {
+                    console.log('0 matches')
                     res.sendFile(`${__dirname}/blanktvsearch.xml`);
                   } else {
                     for (const match of matches) {
