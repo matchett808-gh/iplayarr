@@ -85,6 +85,10 @@ function changeQueueItemState(itemId, newState) {
   db.set('config', config);
 }
 
+function getQueueItemById(id) {
+  return config.queue.find((x) => x.id === id);
+}
+
 function releaseSlotById(id) {
   const config = db.get('config');
   const index = config.slots.indexOf(id);
@@ -416,8 +420,9 @@ app.post('/json', (req, res) => {
       case 'core.remove_torrent':
         // @TODO: implement removing a torrent from the queue
         const config = db.get('config');
-        const targetDirectory = `${config.completedDir}/${req.body.params[0]}/`;
-        queueRemoveById(req.body.params[0])
+        const item = getQueueItemById(req.body.params[0])
+        const targetDirectory = `${config.completedDir}/${item.dn}/`;
+        queueRemoveById(item.id)
         if(fs.lstatSync(targetDirectory).isDirectory()) {
           fs.rm(targetDirectory, {force: true, recursive: true},()=>{})
         }
