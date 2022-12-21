@@ -303,7 +303,7 @@ app.get('/sonarr', (req, res) => {
         }
         const resultregex = /^(.*)( - )(.*)(, .*, )(.*)/gm;
         additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
-        exec(`get_iplayer --exclude-channel=CBBC --nocopyright --fields=name '${showres.data.name}'`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
+        exec(`/app/get_iplayer --exclude-channel=CBBC --nocopyright --fields=name "${showres.data.name}"`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
           if (currentSearchError) {
             console.log('iplayer error 2')
             res.sendFile(`${__dirname}/blanktvsearch.xml`);
