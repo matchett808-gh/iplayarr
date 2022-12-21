@@ -14,17 +14,17 @@ Tools should all be installed, have fun.
 
 Add a Deluge Download client with these settings:
 
-Name: [important - you'll select this in the indexer so make it unique]
-Host: [IP of your container]
-Port: [8081 or whatever you've mapped it to]
+- Name: [important - you'll select this in the indexer so make it unique]
+- Host: [IP of your container]
+- Port: [8081 or whatever you've mapped it to]
 
 Add a custom torznab indexer with these settings:
 
-Name: [pick one]
-Enable RSS: False
-URL: [http://10.0.0.194:8081/ <- depends on port and IP of where you are running the container]
-API Path: /sonarr
-Download Client: [Download client set up previously]
+- Name: [pick one]
+- Enable RSS: False
+- URL: [http://10.0.0.194:8081/ <- depends on port and IP of where you are running the container]
+- API Path: /sonarr
+- Download Client: [Download client set up previously]
 
 Now this should be working
 

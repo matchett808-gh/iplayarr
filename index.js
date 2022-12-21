@@ -267,7 +267,7 @@ function zeroPad(num, places) {
   return Array(+(zero > 0 && zero)).join('0') + num;
 }
 
-app.get('/api', (req, res) => {
+app.get('/sonarr', (req, res) => {
   hearBeat();
   let additionalLines = [];
   let matches = [];
