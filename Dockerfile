@@ -22,6 +22,7 @@ RUN wget -qO- https://github.com/get-iplayer/get_iplayer/archive/v${GET_IPLAYER_
 
 WORKDIR /usr/src/app
 COPY package.json ./
+RUN mkdir tmp
 RUN apk --no-cache add git
 RUN apk --no-cache add curl
 RUN npm install
