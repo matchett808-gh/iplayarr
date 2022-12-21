@@ -86,6 +86,7 @@ function changeQueueItemState(itemId, newState) {
 }
 
 function getQueueItemById(id) {
+  const config = db.get('config');
   return config.queue.find((x) => x.id === id);
 }
 
