@@ -1,0 +1,11 @@
+{
+    "config": {
+        "slotnum": 1,
+        "slots": [],
+        "queue": [],
+        "manualPIDMap": {
+            "Tokyo Vice": "p0d8nykd"
+        },
+        "completedDir": "/mnt/tmission/complete"
+    }
+}
