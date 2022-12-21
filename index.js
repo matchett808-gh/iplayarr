@@ -160,14 +160,14 @@ function getSystemInfo() {
   const config = db.get('config');
   const torrents = {};
   for (const torrent of config.queue) {
-    let status = torrent.state !== 'Complete' ? torrent.state : 'Complete';
+    let status = torrent.state !== 'Complete' ? torrent.state : 'Paused';
     status = status === 'Downloading' ? 'Active' : status;
     const template = {
       hash: torrent.id,
       name: torrent.dn,
       state: status,
       progress: torrent.state !== 'Complete' ? 0.1 : 100,
-      eta: torrent.state !== 'Complete' ? 99999 : 0,
+      eta: torrent.state !== 'Complete' ? 1 : 0,
       // 'message': 'queued',
       is_finished: torrent.state === 'Complete',
       save_path: torrent.state === 'Complete' ? '/downloads/complete/' : '',
@@ -175,10 +175,10 @@ function getSystemInfo() {
       total_done: torrent.state !== 'Complete' ? 0 : 10000,
       time_added: 0,
       active_time: 0,
-      ratio: 0,
+      ratio: 1,
       is_auto_managed: true,
       stop_at_ratio: 0,
-      remove_at_ratio: 0,
+      remove_at_ratio: 1,
       stop_ratio: 0,
     };
     torrents[torrent.id] = template;
