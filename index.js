@@ -9,6 +9,7 @@ const queryString = require('querystring');
 const JSONdb = require('simple-json-db');
 
 const db = new JSONdb('data.json');
+const pidMapFile = new JSONdb('pids.json');
 const crypto = require('crypto');
 
 const host = 'localhost';
@@ -287,8 +288,8 @@ app.get('/sonarr', (req, res) => {
     axios.get(url).then((showres) => {
       let seriesPid = null;
 
-      const config = db.get('config');
-      seriesPid = config.manualPIDMap[showres.data.name];
+      const pidMap = pidMapFile.get('pidMap');
+      seriesPid = pidMap[showres.data.name];
 
       if (showres.data.officialSite) {
         if (showres.data.officialSite.startsWith('https://www.bbc.co.uk/programmes/')) {
