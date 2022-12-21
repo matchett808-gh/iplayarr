@@ -295,6 +295,8 @@ app.get('/sonarr', (req, res) => {
       if (showres.data.officialSite) {
         if (showres.data.officialSite.startsWith('https://www.bbc.co.uk/programmes/')) {
           seriesPid = showres.data.officialSite.replace('https://www.bbc.co.uk/programmes/', '');
+        } else if (showres.data.officialSite.startsWith('http://www.bbc.co.uk/programmes/')) {
+          seriesPid = showres.data.officialSite.replace('http://www.bbc.co.uk/programmes/', '');
         }
       }
       if (seriesPid == null) {
