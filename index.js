@@ -58,13 +58,21 @@ const move = function(src, dest, after = function(){}) {
   after();
 }
 
-function episodeTitleMatcher(match, epname) {
+function episodeTitleMatcher(match, epname, s) {
+  const seriesMatch = function (m,s) {
+    const seriesMatch = new RegExp(`(.*?)${s} - (.*?), .*`, 'g');
+    const matches = [...m.matchAll(seriesMatch)]
+    if(matches.length === 0) {
+       return false
+    }
+
+  }
   const process = function (s) {
     return s.replace('&', 'and')
       .replace(/ /gm, '')
       .toLowerCase();
   };
-  return process(match) === process(epname);
+  return process(match[3]) === process(epname) && seriesMatch(m[0], s);
 }
 
 function changeQueueItemState(itemId, newState) {
@@ -328,7 +336,7 @@ app.get('/sonarr', (req, res) => {
                     res.sendFile(`${__dirname}/blanktvsearch.xml`);
                   } else {
                     for (const match of matches) {
-                      if (episodeTitleMatcher(match[3], episode.name)) {
+                      if (episodeTitleMatcher(match, episode.name, episode.season)) {
                         // now return this to sonarr
                         const dllink = `https://www.bbc.co.uk/iplayer/episode/${match[5]}`;
                         const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`;
