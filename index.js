@@ -105,7 +105,7 @@ function queueRemoveById(id) {
 }
 
 function getIplayerCommand(pid, safedn, dir) {
-  return `/app/get_iplayer --subs-embed --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`;
+  return `/app/get_iplayer --subs-embed --tv-quality fhd,hd,sd --force --pid=${pid} --file-prefix="${safedn}" --output="${dir}"`;
 }
 
 async function worker(active, completedDir) {
@@ -424,10 +424,13 @@ app.post('/json', (req, res) => {
         // @TODO: implement removing a torrent from the queue
         const config = db.get('config');
         const item = getQueueItemById(req.body.params[0])
-        const targetDirectory = `${config.completedDir}/${item.dn}/`;
-        queueRemoveById(item.id)
-        if(fs.lstatSync(targetDirectory).isDirectory()) {
-          fs.rm(targetDirectory, {force: true, recursive: true},()=>{})
+        if(item) {
+          const targetDirectory = `${config.completedDir}/${item.dn}/`;
+          queueRemoveById(item.id)
+          if(fs.lstatSync(targetDirectory)) {
+            fs.rm(targetDirectory, {force: true, recursive: true},()=>{})
+          }
+
         }
         res.status(200);
         response.error = null;
