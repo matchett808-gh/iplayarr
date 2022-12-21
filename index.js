@@ -72,7 +72,7 @@ function episodeTitleMatcher(match, epname, s,e ) {
       .replace(/ /gm, '')
       .toLowerCase();
   };
-  return (process(match[3]) === process(epname) || match[3] == zeroPad(e, 2)) && seriesMatch(match[0], s);
+  return (process(match[3]) === process(epname) || match[3] == `Episode ${zeroPad(e, 2)}` || match[3] == `Episode ${e}`) && seriesMatch(match[0], s);
 }
 
 function changeQueueItemState(itemId, newState) {
