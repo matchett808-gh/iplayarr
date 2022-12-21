@@ -416,7 +416,7 @@ app.post('/json', (req, res) => {
       case 'core.remove_torrent':
         // @TODO: implement removing a torrent from the queue
         const config = db.get('config');
-        const targetDirectory = `${config.completedDir}/${id}/`;
+        const targetDirectory = `${config.completedDir}/${req.body.params[0]}/`;
         queueRemoveById(req.body.params[0])
         if(fs.lstatSync(targetDirectory).isDirectory()) {
           fs.rm(targetDirectory, {force: true, recursive: true},()=>{})
