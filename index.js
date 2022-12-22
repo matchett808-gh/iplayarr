@@ -176,9 +176,9 @@ function getSystemInfo() {
       active_time: 1000,
       ratio: 1,
       is_auto_managed: true,
-      stop_at_ratio: 0.1,
-      remove_at_ratio: 0.1,
-      stop_ratio: 0.1,
+      stop_at_ratio: 0,
+      remove_at_ratio: 1,
+      stop_ratio: 0,
     };
     torrents[torrent.id] = template;
   }
