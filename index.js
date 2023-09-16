@@ -281,7 +281,6 @@ app.get('/sonarr', (req, res) => {
   let matches = [];
   console.log(req.query);
   let seriesPid = null;
-  console.log(res.query.tvmazeid)
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
   } else if (req.query.t === 'tvsearch' && seriesPid) {
