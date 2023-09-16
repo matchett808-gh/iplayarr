@@ -282,12 +282,15 @@ app.get('/sonarr', (req, res) => {
     const pidMapFile = new JSONdb('pids.json');
     const pidMap = pidMapFile.get('pidMap');
     const tvmMap = pidMapFile.get('tvmMap');
-    seriesPid = pidMap[res.query.q];
 
+    let tvmid = null
+    if(res.query.q){
+      seriesPid = pidMap[res.query.q];
+      tvmid = tvmMap[seriesPid];
+    }
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
-  } else if ((req.query.t === 'tvsearch' && ( req.query.tvmazeid || tvmMap[seriesPid] ) ) ) {
-    let tvmid = null
+  } else if ((req.query.t === 'tvsearch' && ( req.query.tvmazeid || tvmid) ) ) {
     if(req.query.tvmazeid) {
       tvmid = req.query.tvmazeid 
     } else {
