@@ -350,7 +350,7 @@ app.get('/sonarr', (req, res) => {
               
               const episodes = episoderes.data;
               for (const episode of episodes) {
-                if (episode.number == requestedEpisode && episode.season == requestedSeason) {
+                if (episode.number == req.query.ep && episode.season == request.query.season) {
                   const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
                   console.log(matches);
                   // found the one we are looking for
