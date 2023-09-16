@@ -280,16 +280,19 @@ app.get('/sonarr', (req, res) => {
   let additionalLines = [];
   let matches = [];
   console.log(req.query);
-  const pidMapFile = new JSONdb('pids.json');
-  const pidMap = pidMapFile.get('pidMap');
-  seriesPid = pidMap[showres.data.name];
+  let seriesPid = null;
 
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
-  } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid )|| (req.query.t === 'tvsearch' && seriesPid) ) {
+  } else if (req.query.t === 'tvsearch' && seriesPid) {
+      const pidMapFile = new JSONdb('pids.json');
+      const pidMap = pidMapFile.get('pidMap');
+      seriesPid = pidMap[res.query.q];
+
+      doDownload(seriesPid, res.query.q);
+  } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid ) ) {
     const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
     axios.get(url).then((showres) => {
-      let seriesPid = null;
 
 
       if (showres.data.officialSite) {
@@ -299,84 +302,93 @@ app.get('/sonarr', (req, res) => {
           seriesPid = showres.data.officialSite.replace('http://www.bbc.co.uk/programmes/', '');
         }
       }
+      /* Overwrite the SeriesPid with the one from the map */
+      const pidMapFile = new JSONdb('pids.json');
+      const pidMap = pidMapFile.get('pidMap');
+      if(pidMap[showres.data.name]) {
+        seriesPid = pidMap[showres.data.name];
+      }
       if (seriesPid == null) {
         console.log('no seriesPID')
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
       }
-
-      exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
-        if (error) {
-          console.log('iplayer error')
-          res.sendFile(`${__dirname}/blanktvsearch.xml`);
-        }
-        if (stderr) {
-          console.log(`stderr: ${stderr}`);
-          res.sendFile(`${__dirname}/blanktvsearch.xml`);
-        }
-        const resultregex = /^(.*)( - )(.*)(, .*, )(.*)/gm;
-        additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
-        exec(`/app/get_iplayer --exclude-channel=CBBC --nocopyright --fields=name "${showres.data.name}"`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
-          if (currentSearchError) {
-            console.log('iplayer error 2')
-            res.sendFile(`${__dirname}/blanktvsearch.xml`);
-          }
-          if (currentSearchStderr) {
-            console.log(`stderr: ${currentSearchStderr}`);
-            res.sendFile(`${__dirname}/blanktvsearch.xml`);
-          }
-          if (currentSearchStdout) {
-            const currentSearchResultregex = /^(\d*):\t(.*) - (.*), (.*), (.*)/gm;
-            const partMatches = [...currentSearchStdout.matchAll(currentSearchResultregex)];
-            matches = partMatches.concat(additionalLines);
-            axios.get(`${url}/episodes`).then((episoderes) => {
-              const episodes = episoderes.data;
-              for (const episode of episodes) {
-                if (episode.number == req.query.ep && episode.season == req.query.season) {
-                  const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
-                  console.log(matches);
-                  // found the one we are looking for
-                  if (matches.length === 0) {
-                    console.log('0 matches')
-                    res.sendFile(`${__dirname}/blanktvsearch.xml`);
-                  } else {
-                    for (const match of matches) {
-                      if (episodeTitleMatcher(match, episode.name, episode.season, episode.number)) {
-                        // now return this to sonarr
-                        const dllink = `https://www.bbc.co.uk/iplayer/episode/${match[5]}`;
-                        const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`;
-
-                        const iplayerMoniker = `${showres.data.name}.${sonarrNaming} [iplayer].1080p`;
-                        const dn = encodeURIComponent(iplayerMoniker);
-                        const content = fs.readFileSync(`${__dirname}/tvsearchtemplate.xml`).toString();
-                        const result = content.replace(/<<imdbid>>/g, showres.data.externals.imdb)
-                          .replace(/<<tvdbid>>/g, req.query.tvdbid)
-                          .replace(/<<content>>/g, enclosure)
-                          .replace(/<<pid>>/g, match[5])
-                          .replace(/<<title>>/g, iplayerMoniker)
-                          .replace(/<<infohash>>/g, createFakeMagnetLinkHash(dn, match[5]))
-                          .replace(/<<dllink>>/g, dllink)
-                          .replace(/<<dn>>/g, dn);
-                        console.log(result);
-                        res.end(result);
-                        return;
-                      }
-                    }
-                    res.sendFile(`${__dirname}/blanktvsearch.xml`);
-                  }
-                  break;
-                }
-              }
-            });
-          }
-        });
-      });
+      doDownload(seriesPid, showres.data.name);
     });
   } else {
     res.sendFile(`${__dirname}/blanktvsearch.xml`);
   }
 });
 
+function doDownload(seriesPid, name) {
+
+  exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
+    if (error) {
+      console.log('iplayer error')
+      res.sendFile(`${__dirname}/blanktvsearch.xml`);
+    }
+    if (stderr) {
+      console.log(`stderr: ${stderr}`);
+      res.sendFile(`${__dirname}/blanktvsearch.xml`);
+    }
+    const resultregex = /^(.*)( - )(.*)(, .*, )(.*)/gm;
+    additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
+    exec(`/app/get_iplayer --exclude-channel=CBBC --nocopyright --fields=name "${name}"`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
+      if (currentSearchError) {
+        console.log('iplayer error 2')
+        res.sendFile(`${__dirname}/blanktvsearch.xml`);
+      }
+      if (currentSearchStderr) {
+        console.log(`stderr: ${currentSearchStderr}`);
+        res.sendFile(`${__dirname}/blanktvsearch.xml`);
+      }
+      if (currentSearchStdout) {
+        const currentSearchResultregex = /^(\d*):\t(.*) - (.*), (.*), (.*)/gm;
+        const partMatches = [...currentSearchStdout.matchAll(currentSearchResultregex)];
+        matches = partMatches.concat(additionalLines);
+        axios.get(`${url}/episodes`).then((episoderes) => {
+          const episodes = episoderes.data;
+          for (const episode of episodes) {
+            if (episode.number == req.query.ep && episode.season == req.query.season) {
+              const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
+              console.log(matches);
+              // found the one we are looking for
+              if (matches.length === 0) {
+                console.log('0 matches')
+                res.sendFile(`${__dirname}/blanktvsearch.xml`);
+              } else {
+                for (const match of matches) {
+                  if (episodeTitleMatcher(match, episode.name, episode.season, episode.number)) {
+                    // now return this to sonarr
+                    const dllink = `https://www.bbc.co.uk/iplayer/episode/${match[5]}`;
+                    const enclosure = `<enclosure url="${dllink}" length="796681201" type="application/x-bittorrent" /><pubDate>${episode.airstamp}</pubDate>`;
+
+                    const iplayerMoniker = `${showres.data.name}.${sonarrNaming} [iplayer].1080p`;
+                    const dn = encodeURIComponent(iplayerMoniker);
+                    const content = fs.readFileSync(`${__dirname}/tvsearchtemplate.xml`).toString();
+                    const result = content.replace(/<<imdbid>>/g, showres.data.externals.imdb)
+                      .replace(/<<tvdbid>>/g, req.query.tvdbid)
+                      .replace(/<<content>>/g, enclosure)
+                      .replace(/<<pid>>/g, match[5])
+                      .replace(/<<title>>/g, iplayerMoniker)
+                      .replace(/<<infohash>>/g, createFakeMagnetLinkHash(dn, match[5]))
+                      .replace(/<<dllink>>/g, dllink)
+                      .replace(/<<dn>>/g, dn);
+                    console.log(result);
+                    res.end(result);
+                    return;
+                  }
+                }
+                res.sendFile(`${__dirname}/blanktvsearch.xml`);
+              }
+              break;
+            }
+          }
+        });
+      }
+    });
+  });
+}
 app.post('/json', (req, res) => {
   console.log(req.body);
   const response = {};
