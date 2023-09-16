@@ -280,16 +280,17 @@ app.get('/sonarr', (req, res) => {
   let additionalLines = [];
   let matches = [];
   console.log(req.query);
+  const pidMapFile = new JSONdb('pids.json');
+  const pidMap = pidMapFile.get('pidMap');
+  seriesPid = pidMap[showres.data.name];
+
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
-  } else if (req.query.t === 'tvsearch' && req.query.tvmazeid) {
+  } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid )|| (req.query.t === 'tvsearch' && seriesPid) ) {
     const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
     axios.get(url).then((showres) => {
       let seriesPid = null;
 
-      const pidMapFile = new JSONdb('pids.json');
-      const pidMap = pidMapFile.get('pidMap');
-      seriesPid = pidMap[showres.data.name];
 
       if (showres.data.officialSite) {
         if (showres.data.officialSite.startsWith('https://www.bbc.co.uk/programmes/')) {
