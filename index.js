@@ -284,8 +284,10 @@ app.get('/sonarr', (req, res) => {
   } else if (req.query.t === 'tvsearch' && seriesPid) {
       const pidMapFile = new JSONdb('pids.json');
       const pidMap = pidMapFile.get('pidMap');
+      const tvmMap = pidMapFile.get('tvmMap');
       seriesPid = pidMap[res.query.q];
-      doDownload(seriesPid, res.query.q);
+      const url = `https://api.tvmaze.com/shows/${tvmMap[seriesPid]}`;
+      doDownload(seriesPid, res.query.q, url);
   } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid ) ) {
     const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
     axios.get(url).then((showres) => {
@@ -309,14 +311,14 @@ app.get('/sonarr', (req, res) => {
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
       }
-      doDownload(seriesPid, showres.data.name);
+      doDownload(seriesPid, showres.data.name, url);
     });
   } else {
     res.sendFile(`${__dirname}/blanktvsearch.xml`);
   }
 });
 
-function doDownload(seriesPid, name) {
+function doDownload(seriesPid, name, url) {
 
   let additionalLines = [];
   let matches = [];
