@@ -284,7 +284,7 @@ app.get('/sonarr', (req, res) => {
     const tvmMap = pidMapFile.get('tvmMap');
 
     let tvmid = null
-    if(res.query.q){
+    if(res.query && res.query.q){
       seriesPid = pidMap[res.query.q];
       tvmid = tvmMap[seriesPid];
     }
