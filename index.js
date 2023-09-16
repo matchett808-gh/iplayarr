@@ -287,7 +287,7 @@ app.get('/sonarr', (req, res) => {
       const tvmMap = pidMapFile.get('tvmMap');
       seriesPid = pidMap[res.query.q];
       const url = `https://api.tvmaze.com/shows/${tvmMap[seriesPid]}`;
-      doDownload(seriesPid, res.query.q, url);
+      doDownload(seriesPid, showres.data.name, url, req.query.ep, req.query.season);
   } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid ) ) {
     const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
     axios.get(url).then((showres) => {
@@ -311,14 +311,14 @@ app.get('/sonarr', (req, res) => {
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
       }
-      doDownload(seriesPid, showres.data.name, url);
+      doDownload(seriesPid, showres.data.name, url, req.query.ep, req.query.season);
     });
   } else {
     res.sendFile(`${__dirname}/blanktvsearch.xml`);
   }
 });
 
-function doDownload(seriesPid, name, url) {
+function doDownload(seriesPid, name, url, requestedEpisode, requestedSeason) {
 
   let additionalLines = [];
   let matches = [];
@@ -350,7 +350,7 @@ function doDownload(seriesPid, name, url) {
         axios.get(`${url}/episodes`).then((episoderes) => {
           const episodes = episoderes.data;
           for (const episode of episodes) {
-            if (episode.number == req.query.ep && episode.season == req.query.season) {
+            if (episode.number == requestedEpisode && episode.season == requestedSeason) {
               const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
               console.log(matches);
               // found the one we are looking for
