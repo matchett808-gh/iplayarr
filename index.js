@@ -321,7 +321,7 @@ app.get('/sonarr', (req, res) => {
 
       let additionalLines = [];
       let matches = [];
-      console.log(`seriesPid: ${seriesPid}, ${name} :: doDownload`)
+      console.log(`seriesPid: ${seriesPid}, ${showres.data.name} :: doDownload`)
       exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
         if (error) {
           console.log('iplayer error')
@@ -333,7 +333,7 @@ app.get('/sonarr', (req, res) => {
         }
         const resultregex = /^(.*)( - )(.*)(, .*, )(.*)/gm;
         additionalLines = additionalLines.concat([...stdout.matchAll(resultregex)]);
-        exec(`/app/get_iplayer --exclude-channel=CBBC --nocopyright --fields=name "${name}"`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
+        exec(`/app/get_iplayer --exclude-channel=CBBC --nocopyright --fields=name "${showres.data.name}"`, (currentSearchError, currentSearchStdout, currentSearchStderr) => {
           if (currentSearchError) {
             console.log('iplayer error 2')
             res.sendFile(`${__dirname}/blanktvsearch.xml`);
