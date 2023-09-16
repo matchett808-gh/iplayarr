@@ -281,14 +281,13 @@ app.get('/sonarr', (req, res) => {
   let matches = [];
   console.log(req.query);
   let seriesPid = null;
-
+  console.log(res.query.tvmazeid)
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
   } else if (req.query.t === 'tvsearch' && seriesPid) {
       const pidMapFile = new JSONdb('pids.json');
       const pidMap = pidMapFile.get('pidMap');
       seriesPid = pidMap[res.query.q];
-
       doDownload(seriesPid, res.query.q);
   } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid ) ) {
     const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
@@ -322,6 +321,7 @@ app.get('/sonarr', (req, res) => {
 
 function doDownload(seriesPid, name) {
 
+  console.log(`seriesPid: ${seriesPid}, ${name} :: doDownload`)
   exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
     if (error) {
       console.log('iplayer error')
