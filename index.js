@@ -279,17 +279,21 @@ app.get('/sonarr', (req, res) => {
   hearBeat();
   console.log(req.query);
   let seriesPid = null;
+    const pidMapFile = new JSONdb('pids.json');
+    const pidMap = pidMapFile.get('pidMap');
+    const tvmMap = pidMapFile.get('tvmMap');
+    seriesPid = pidMap[res.query.q];
+
   if (req.query.t === 'caps') {
     res.sendFile(`${__dirname}/caps.xml`);
-  } else if (req.query.t === 'tvsearch' && seriesPid) {
-      const pidMapFile = new JSONdb('pids.json');
-      const pidMap = pidMapFile.get('pidMap');
-      const tvmMap = pidMapFile.get('tvmMap');
-      seriesPid = pidMap[res.query.q];
-      const url = `https://api.tvmaze.com/shows/${tvmMap[seriesPid]}`;
-      doDownload(seriesPid, showres.data.name, url, req.query.ep, req.query.season);
-  } else if ((req.query.t === 'tvsearch' && req.query.tvmazeid ) ) {
-    const url = `https://api.tvmaze.com/shows/${req.query.tvmazeid}`;
+  } else if ((req.query.t === 'tvsearch' && ( req.query.tvmazeid || tvmMap[seriesPid] ) ) ) {
+    let tvmid = null
+    if(req.query.tvmazeid) {
+      tvmid = req.query.tvmazeid 
+    } else {
+      tvmid = tvmMap[seriesPid]
+    }
+    const url = `https://api.tvmaze.com/shows/${tvmid}`;
     axios.get(url).then((showres) => {
 
 
@@ -311,7 +315,7 @@ app.get('/sonarr', (req, res) => {
         res.sendFile(`${__dirname}/blanktvsearch.xml`);
         return;
       }
-      doDownload(seriesPid, showres.data.name, url, req.query.ep, req.query.season);
+      doDownload(seriesPid, showres.data.name, url, req.query.ep, req.query.season, showres);
     });
   } else {
     res.sendFile(`${__dirname}/blanktvsearch.xml`);
