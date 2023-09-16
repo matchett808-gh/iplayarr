@@ -278,6 +278,8 @@ function zeroPad(num, places) {
 app.get('/sonarr', (req, res) => {
   hearBeat();
   console.log(req.query);
+  let additionalLines = [];
+  let matches = [];
   let seriesPid = null;
     const pidMapFile = new JSONdb('pids.json');
     const pidMap = pidMapFile.get('pidMap');
@@ -319,8 +321,6 @@ app.get('/sonarr', (req, res) => {
         return;
       }
 
-      let additionalLines = [];
-      let matches = [];
       console.log(`seriesPid: ${seriesPid}, ${showres.data.name} :: doDownload`)
       exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
         if (error) {
@@ -350,7 +350,7 @@ app.get('/sonarr', (req, res) => {
               
               const episodes = episoderes.data;
               for (const episode of episodes) {
-                if (episode.number == req.query.ep && episode.season == request.query.season) {
+                if (episode.number == req.query.ep && episode.season == req.query.season) {
                   const sonarrNaming = `S${zeroPad(episode.season, 2)}E${zeroPad(episode.number, 2)}`;
                   console.log(matches);
                   // found the one we are looking for
