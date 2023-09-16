@@ -277,8 +277,6 @@ function zeroPad(num, places) {
 
 app.get('/sonarr', (req, res) => {
   hearBeat();
-  let additionalLines = [];
-  let matches = [];
   console.log(req.query);
   let seriesPid = null;
   if (req.query.t === 'caps') {
@@ -320,6 +318,8 @@ app.get('/sonarr', (req, res) => {
 
 function doDownload(seriesPid, name) {
 
+  let additionalLines = [];
+  let matches = [];
   console.log(`seriesPid: ${seriesPid}, ${name} :: doDownload`)
   exec(`/app/get_iplayer --nocopyright --pid=${seriesPid}  --pid-recursive-list `, (error, stdout, stderr) => {
     if (error) {
